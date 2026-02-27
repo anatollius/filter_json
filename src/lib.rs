@@ -250,54 +250,40 @@ impl<'a> Parser<'a> {
 
     fn skip_object(&mut self) -> Result<(), FilterError> {
         self.expect(b'{')?;
-        self.skip_whitespace();
-        if self.peek() == Some(b'}') {
-            self.advance();
-            return Ok(());
-        }
+        let mut depth = 1;
         loop {
-            self.skip_whitespace();
-            self.skip_string()?;
-            self.skip_whitespace();
-            self.expect(b':')?;
-            self.skip_whitespace();
-            self.skip_value_inner()?;
-            self.skip_whitespace();
-            match self.advance() {
-                Some(b',') => {}
-                Some(b'}') => return Ok(()),
-                Some(b) => {
-                    return Err(FilterError::InvalidJson(format!(
-                        "expected ',' or '}}' but got '{}'",
-                        b as char
-                    )))
-                }
+            match self.peek() {
                 None => return Err(FilterError::UnexpectedEof),
+                Some(b'"') => { self.skip_string()?; }
+                Some(b'{') => { self.advance(); depth += 1; }
+                Some(b'}') => {
+                    self.advance();
+                    depth -= 1;
+                    if depth == 0 {
+                        return Ok(());
+                    }
+                }
+                _ => { self.advance(); }
             }
         }
     }
 
     fn skip_array(&mut self) -> Result<(), FilterError> {
         self.expect(b'[')?;
-        self.skip_whitespace();
-        if self.peek() == Some(b']') {
-            self.advance();
-            return Ok(());
-        }
+        let mut depth = 1;
         loop {
-            self.skip_whitespace();
-            self.skip_value_inner()?;
-            self.skip_whitespace();
-            match self.advance() {
-                Some(b',') => {}
-                Some(b']') => return Ok(()),
-                Some(b) => {
-                    return Err(FilterError::InvalidJson(format!(
-                        "expected ',' or ']' but got '{}'",
-                        b as char
-                    )))
-                }
+            match self.peek() {
                 None => return Err(FilterError::UnexpectedEof),
+                Some(b'"') => { self.skip_string()?; }
+                Some(b'[') => { self.advance(); depth += 1; }
+                Some(b']') => {
+                    self.advance();
+                    depth -= 1;
+                    if depth == 0 {
+                        return Ok(());
+                    }
+                }
+                _ => { self.advance(); }
             }
         }
     }
