@@ -22,17 +22,20 @@ impl std::error::Error for FilterError {}
 
 // ─── Criteria ──────────────────────────────────────────────────────────────
 
-/// Keep only the keys at these dot-separated paths; all others are removed.
+/// A set of dot-separated key paths used to filter a JSON value.
+///
+/// Pass to [`filter_json`] to include only matching keys, or to
+/// [`filter_json_exclude`] to remove matching keys.
 ///
 /// ```
-/// # use filter_json::InclusionCriteria;
-/// let c = InclusionCriteria::from(vec!["customer.name"]);
+/// # use filter_json::FilterCriteria;
+/// let c = FilterCriteria::new(&["customer.name"]);
 /// ```
-pub struct InclusionCriteria {
+pub struct FilterCriteria {
     paths: Vec<Vec<String>>,
 }
 
-impl InclusionCriteria {
+impl FilterCriteria {
     pub fn new(paths: &[&str]) -> Self {
         Self {
             paths: paths
@@ -43,29 +46,7 @@ impl InclusionCriteria {
     }
 }
 
-impl<'a> From<Vec<&'a str>> for InclusionCriteria {
-    fn from(paths: Vec<&'a str>) -> Self {
-        Self::new(&paths)
-    }
-}
-
-/// Remove any keys at these dot-separated paths; all others are kept.
-pub struct ExclusionCriteria {
-    paths: Vec<Vec<String>>,
-}
-
-impl ExclusionCriteria {
-    pub fn new(paths: &[&str]) -> Self {
-        Self {
-            paths: paths
-                .iter()
-                .map(|p| p.split('.').map(String::from).collect())
-                .collect(),
-        }
-    }
-}
-
-impl<'a> From<Vec<&'a str>> for ExclusionCriteria {
+impl<'a> From<Vec<&'a str>> for FilterCriteria {
     fn from(paths: Vec<&'a str>) -> Self {
         Self::new(&paths)
     }
@@ -83,9 +64,9 @@ enum InclusionStatus {
     Skip,
 }
 
-fn inclusion_status(path: &[String], criteria: &InclusionCriteria) -> InclusionStatus {
+fn inclusion_status(path: &[String], paths: &[Vec<String>]) -> InclusionStatus {
     let mut found_prefix = false;
-    for criterion in &criteria.paths {
+    for criterion in paths {
         if criterion.as_slice() == path {
             return InclusionStatus::Exact;
         }
@@ -110,9 +91,9 @@ enum ExclusionStatus {
     Keep,
 }
 
-fn exclusion_status(path: &[String], criteria: &ExclusionCriteria) -> ExclusionStatus {
+fn exclusion_status(path: &[String], paths: &[Vec<String>]) -> ExclusionStatus {
     let mut found_prefix = false;
-    for criterion in &criteria.paths {
+    for criterion in paths {
         if criterion.as_slice() == path {
             return ExclusionStatus::Skip;
         }
@@ -357,7 +338,7 @@ impl<'a> Parser<'a> {
     fn filter_value_include(
         &mut self,
         path: &[String],
-        criteria: &InclusionCriteria,
+        criteria: &FilterCriteria,
         out: &mut String,
     ) -> Result<(), FilterError> {
         self.skip_whitespace();
@@ -373,7 +354,7 @@ impl<'a> Parser<'a> {
     fn filter_object_include(
         &mut self,
         path: &[String],
-        criteria: &InclusionCriteria,
+        criteria: &FilterCriteria,
         out: &mut String,
     ) -> Result<(), FilterError> {
         self.expect(b'{')?;
@@ -397,7 +378,7 @@ impl<'a> Parser<'a> {
             self.expect(b':')?;
             self.skip_whitespace();
 
-            match inclusion_status(&child_path, criteria) {
+            match inclusion_status(&child_path, &criteria.paths) {
                 InclusionStatus::Exact => {
                     if !first {
                         out.push(',');
@@ -447,7 +428,7 @@ impl<'a> Parser<'a> {
     fn filter_value_exclude(
         &mut self,
         path: &[String],
-        criteria: &ExclusionCriteria,
+        criteria: &FilterCriteria,
         out: &mut String,
     ) -> Result<(), FilterError> {
         self.skip_whitespace();
@@ -461,7 +442,7 @@ impl<'a> Parser<'a> {
     fn filter_object_exclude(
         &mut self,
         path: &[String],
-        criteria: &ExclusionCriteria,
+        criteria: &FilterCriteria,
         out: &mut String,
     ) -> Result<(), FilterError> {
         self.expect(b'{')?;
@@ -485,7 +466,7 @@ impl<'a> Parser<'a> {
             self.expect(b':')?;
             self.skip_whitespace();
 
-            match exclusion_status(&child_path, criteria) {
+            match exclusion_status(&child_path, &criteria.paths) {
                 ExclusionStatus::Skip => {
                     self.skip_value_inner()?;
                 }
@@ -531,7 +512,7 @@ impl<'a> Parser<'a> {
     fn filter_array_exclude(
         &mut self,
         path: &[String],
-        criteria: &ExclusionCriteria,
+        criteria: &FilterCriteria,
         out: &mut String,
     ) -> Result<(), FilterError> {
         self.expect(b'[')?;
@@ -596,7 +577,7 @@ fn push_json_key(out: &mut String, key: &str) {
 /// Filter `input` JSON, retaining only the keys that match the inclusion criteria.
 ///
 /// Output is compact (no extra whitespace). Returns an error on malformed JSON.
-pub fn filter_json(input: &str, criteria: &InclusionCriteria) -> Result<String, FilterError> {
+pub fn filter_json(input: &str, criteria: &FilterCriteria) -> Result<String, FilterError> {
     let mut parser = Parser::new(input);
     let mut out = String::new();
     parser.filter_value_include(&[], criteria, &mut out)?;
@@ -608,7 +589,7 @@ pub fn filter_json(input: &str, criteria: &InclusionCriteria) -> Result<String, 
 /// Output is compact (no extra whitespace). Returns an error on malformed JSON.
 pub fn filter_json_exclude(
     input: &str,
-    criteria: &ExclusionCriteria,
+    criteria: &FilterCriteria,
 ) -> Result<String, FilterError> {
     let mut parser = Parser::new(input);
     let mut out = String::new();
@@ -641,7 +622,7 @@ mod tests {
     #[test]
     fn include_nested_key() {
         let json = r#"{"customer": {"name": "Tom", "age": 24}}"#;
-        let c = InclusionCriteria::new(&["customer.name"]);
+        let c = FilterCriteria::new(&["customer.name"]);
         assert_eq!(
             filter_json(json, &c).unwrap(),
             r#"{"customer":{"name":"Tom"}}"#
@@ -651,14 +632,14 @@ mod tests {
     #[test]
     fn include_top_level_key() {
         let json = r#"{"name": "Tom", "age": 24}"#;
-        let c = InclusionCriteria::new(&["name"]);
+        let c = FilterCriteria::new(&["name"]);
         assert_eq!(filter_json(json, &c).unwrap(), r#"{"name":"Tom"}"#);
     }
 
     #[test]
     fn include_multiple_criteria() {
         let json = r#"{"name": "Tom", "age": 24, "city": "London"}"#;
-        let c = InclusionCriteria::new(&["name", "city"]);
+        let c = FilterCriteria::new(&["name", "city"]);
         assert_eq!(
             filter_json(json, &c).unwrap(),
             r#"{"name":"Tom","city":"London"}"#
@@ -668,20 +649,20 @@ mod tests {
     #[test]
     fn include_missing_key_returns_empty_object() {
         let json = r#"{"customer": {"other": 1}}"#;
-        let c = InclusionCriteria::new(&["customer.name"]);
+        let c = FilterCriteria::new(&["customer.name"]);
         assert_eq!(filter_json(json, &c).unwrap(), r#"{"customer":{}}"#);
     }
 
     #[test]
     fn include_empty_input_object() {
-        let c = InclusionCriteria::new(&["name"]);
+        let c = FilterCriteria::new(&["name"]);
         assert_eq!(filter_json("{}", &c).unwrap(), "{}");
     }
 
     #[test]
     fn include_from_vec_str() {
         let json = r#"{"customer": {"name": "Tom", "age": 24}}"#;
-        let c = InclusionCriteria::from(vec!["customer.name"]);
+        let c = FilterCriteria::from(vec!["customer.name"]);
         assert_eq!(
             filter_json(json, &c).unwrap(),
             r#"{"customer":{"name":"Tom"}}"#
@@ -691,14 +672,14 @@ mod tests {
     #[test]
     fn include_numeric_value() {
         let json = r#"{"x": 3.14, "y": 2}"#;
-        let c = InclusionCriteria::new(&["x"]);
+        let c = FilterCriteria::new(&["x"]);
         assert_eq!(filter_json(json, &c).unwrap(), r#"{"x":3.14}"#);
     }
 
     #[test]
     fn include_boolean_and_null() {
         let json = r#"{"a": true, "b": false, "c": null, "d": 1}"#;
-        let c = InclusionCriteria::new(&["a", "b", "c"]);
+        let c = FilterCriteria::new(&["a", "b", "c"]);
         assert_eq!(
             filter_json(json, &c).unwrap(),
             r#"{"a":true,"b":false,"c":null}"#
@@ -710,7 +691,7 @@ mod tests {
     #[test]
     fn exclude_nested_key() {
         let json = r#"{"customer": {"name": "Tom", "age": 24}}"#;
-        let c = ExclusionCriteria::new(&["customer.age"]);
+        let c = FilterCriteria::new(&["customer.age"]);
         assert_eq!(
             filter_json_exclude(json, &c).unwrap(),
             r#"{"customer":{"name":"Tom"}}"#
@@ -720,14 +701,14 @@ mod tests {
     #[test]
     fn exclude_top_level_key() {
         let json = r#"{"name": "Tom", "age": 24}"#;
-        let c = ExclusionCriteria::new(&["age"]);
+        let c = FilterCriteria::new(&["age"]);
         assert_eq!(filter_json_exclude(json, &c).unwrap(), r#"{"name":"Tom"}"#);
     }
 
     #[test]
     fn exclude_entire_subtree() {
         let json = r#"{"public": "yes", "private": {"secret": "shhh"}}"#;
-        let c = ExclusionCriteria::new(&["private"]);
+        let c = FilterCriteria::new(&["private"]);
         assert_eq!(
             filter_json_exclude(json, &c).unwrap(),
             r#"{"public":"yes"}"#
@@ -737,7 +718,7 @@ mod tests {
     #[test]
     fn exclude_from_array_elements() {
         let json = r#"[{"id": 1, "secret": "x"}, {"id": 2, "secret": "y"}]"#;
-        let c = ExclusionCriteria::new(&["secret"]);
+        let c = FilterCriteria::new(&["secret"]);
         assert_eq!(
             filter_json_exclude(json, &c).unwrap(),
             r#"[{"id":1},{"id":2}]"#
@@ -747,7 +728,7 @@ mod tests {
     #[test]
     fn exclude_preserves_all_when_no_match() {
         let json = r#"{"a": 1, "b": 2}"#;
-        let c = ExclusionCriteria::new(&["z"]);
+        let c = FilterCriteria::new(&["z"]);
         assert_eq!(filter_json_exclude(json, &c).unwrap(), r#"{"a":1,"b":2}"#);
     }
 
@@ -755,13 +736,13 @@ mod tests {
 
     #[test]
     fn error_on_invalid_json() {
-        let c = InclusionCriteria::new(&["a"]);
+        let c = FilterCriteria::new(&["a"]);
         assert!(filter_json("not json", &c).is_err());
     }
 
     #[test]
     fn error_on_unexpected_eof() {
-        let c = InclusionCriteria::new(&["a"]);
+        let c = FilterCriteria::new(&["a"]);
         assert!(filter_json(r#"{"a": "#, &c).is_err());
     }
 }
