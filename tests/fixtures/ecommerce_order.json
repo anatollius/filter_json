@@ -1,0 +1,41 @@
+{
+  "order_id": "ORD-12345",
+  "status": "shipped",
+  "customer": {
+    "name": "Alice Smith",
+    "email": "alice@example.com",
+    "phone": "+1-555-0100"
+  },
+  "shipping": {
+    "method": "ground",
+    "address": {
+      "street": "123 Main St",
+      "city": "Springfield",
+      "state": "IL",
+      "zip": "62701"
+    }
+  },
+  "payment": {
+    "method": "credit_card",
+    "last_four": "4242",
+    "expires": "12/27"
+  },
+  "items": [
+    {
+      "sku": "WIDGET-A",
+      "qty": 2,
+      "price": 10.50
+    },
+    {
+      "sku": "GADGET-B",
+      "qty": 1,
+      "price": 24.75
+    }
+  ],
+  "totals": {
+    "subtotal": 45.75,
+    "tax": 3.81,
+    "shipping_cost": 5.00,
+    "grand_total": 54.56
+  }
+}
