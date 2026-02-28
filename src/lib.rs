@@ -64,9 +64,9 @@ enum InclusionStatus {
     Skip,
 }
 
-fn inclusion_status(path: &[String], paths: &[Vec<String>]) -> InclusionStatus {
+fn inclusion_status(path: &[String], criteria: &FilterCriteria) -> InclusionStatus {
     let mut found_prefix = false;
-    for criterion in paths {
+    for criterion in criteria.paths.as_slice() {
         if criterion.as_slice() == path {
             return InclusionStatus::Exact;
         }
@@ -91,9 +91,9 @@ enum ExclusionStatus {
     Keep,
 }
 
-fn exclusion_status(path: &[String], paths: &[Vec<String>]) -> ExclusionStatus {
+fn exclusion_status(path: &[String], criteria: &FilterCriteria) -> ExclusionStatus {
     let mut found_prefix = false;
-    for criterion in paths {
+    for criterion in criteria.paths.as_slice() {
         if criterion.as_slice() == path {
             return ExclusionStatus::Skip;
         }
@@ -203,7 +203,7 @@ impl<'a> Parser<'a> {
                     return Err(FilterError::InvalidJson(format!(
                         "expected '{}' in keyword but got '{}'",
                         expected as char, b as char
-                    )))
+                    )));
                 }
                 None => return Err(FilterError::UnexpectedEof),
             }
@@ -235,8 +235,13 @@ impl<'a> Parser<'a> {
         loop {
             match self.peek() {
                 None => return Err(FilterError::UnexpectedEof),
-                Some(b'"') => { self.skip_string()?; }
-                Some(b'{') => { self.advance(); depth += 1; }
+                Some(b'"') => {
+                    self.skip_string()?;
+                }
+                Some(b'{') => {
+                    self.advance();
+                    depth += 1;
+                }
                 Some(b'}') => {
                     self.advance();
                     depth -= 1;
@@ -244,7 +249,9 @@ impl<'a> Parser<'a> {
                         return Ok(());
                     }
                 }
-                _ => { self.advance(); }
+                _ => {
+                    self.advance();
+                }
             }
         }
     }
@@ -255,8 +262,13 @@ impl<'a> Parser<'a> {
         loop {
             match self.peek() {
                 None => return Err(FilterError::UnexpectedEof),
-                Some(b'"') => { self.skip_string()?; }
-                Some(b'[') => { self.advance(); depth += 1; }
+                Some(b'"') => {
+                    self.skip_string()?;
+                }
+                Some(b'[') => {
+                    self.advance();
+                    depth += 1;
+                }
                 Some(b']') => {
                     self.advance();
                     depth -= 1;
@@ -264,7 +276,9 @@ impl<'a> Parser<'a> {
                         return Ok(());
                     }
                 }
-                _ => { self.advance(); }
+                _ => {
+                    self.advance();
+                }
             }
         }
     }
@@ -321,7 +335,7 @@ impl<'a> Parser<'a> {
                         return Err(FilterError::InvalidJson(format!(
                             "invalid escape \\{}",
                             b as char
-                        )))
+                        )));
                     }
                 },
                 Some(b) => result.push(b),
@@ -378,7 +392,7 @@ impl<'a> Parser<'a> {
             self.expect(b':')?;
             self.skip_whitespace();
 
-            match inclusion_status(&child_path, &criteria.paths) {
+            match inclusion_status(&child_path, criteria) {
                 InclusionStatus::Exact => {
                     if !first {
                         out.push(',');
@@ -390,7 +404,7 @@ impl<'a> Parser<'a> {
                 InclusionStatus::Prefix => {
                     let mut child_out = String::new();
                     self.filter_value_include(&child_path, criteria, &mut child_out)?;
-                    if !child_out.is_empty() {
+                    if child_out != "{}" {
                         if !first {
                             out.push(',');
                         }
@@ -415,7 +429,7 @@ impl<'a> Parser<'a> {
                     return Err(FilterError::InvalidJson(format!(
                         "expected ',' or '}}' but got '{}'",
                         b as char
-                    )))
+                    )));
                 }
                 None => return Err(FilterError::UnexpectedEof),
             }
@@ -466,19 +480,21 @@ impl<'a> Parser<'a> {
             self.expect(b':')?;
             self.skip_whitespace();
 
-            match exclusion_status(&child_path, &criteria.paths) {
+            match exclusion_status(&child_path, criteria) {
                 ExclusionStatus::Skip => {
                     self.skip_value_inner()?;
                 }
                 ExclusionStatus::Recurse => {
                     let mut child_out = String::new();
                     self.filter_value_exclude(&child_path, criteria, &mut child_out)?;
-                    if !first {
-                        out.push(',');
+                    if child_out != "{}" {
+                        if !first {
+                            out.push(',');
+                        }
+                        first = false;
+                        push_json_key(out, &key);
+                        out.push_str(&child_out);
                     }
-                    first = false;
-                    push_json_key(out, &key);
-                    out.push_str(&child_out);
                 }
                 ExclusionStatus::Keep => {
                     if !first {
@@ -501,7 +517,7 @@ impl<'a> Parser<'a> {
                     return Err(FilterError::InvalidJson(format!(
                         "expected ',' or '}}' but got '{}'",
                         b as char
-                    )))
+                    )));
                 }
                 None => return Err(FilterError::UnexpectedEof),
             }
@@ -544,7 +560,7 @@ impl<'a> Parser<'a> {
                     return Err(FilterError::InvalidJson(format!(
                         "expected ',' or ']' but got '{}'",
                         b as char
-                    )))
+                    )));
                 }
                 None => return Err(FilterError::UnexpectedEof),
             }
@@ -587,10 +603,7 @@ pub fn filter_json(input: &str, criteria: &FilterCriteria) -> Result<String, Fil
 /// Filter `input` JSON, removing any keys that match the exclusion criteria.
 ///
 /// Output is compact (no extra whitespace). Returns an error on malformed JSON.
-pub fn filter_json_exclude(
-    input: &str,
-    criteria: &FilterCriteria,
-) -> Result<String, FilterError> {
+pub fn filter_json_exclude(input: &str, criteria: &FilterCriteria) -> Result<String, FilterError> {
     let mut parser = Parser::new(input);
     let mut out = String::new();
     parser.filter_value_exclude(&[], criteria, &mut out)?;
@@ -650,7 +663,7 @@ mod tests {
     fn include_missing_key_returns_empty_object() {
         let json = r#"{"customer": {"other": 1}}"#;
         let c = FilterCriteria::new(&["customer.name"]);
-        assert_eq!(filter_json(json, &c).unwrap(), r#"{"customer":{}}"#);
+        assert_eq!(filter_json(json, &c).unwrap(), "{}");
     }
 
     #[test]
@@ -696,6 +709,13 @@ mod tests {
             filter_json_exclude(json, &c).unwrap(),
             r#"{"customer":{"name":"Tom"}}"#
         );
+    }
+
+    #[test]
+    fn exclude_nested_all_match() {
+        let json = r#"{"customer": {"name": "Tom", "age": 24}}"#;
+        let c = FilterCriteria::new(&["customer.age", "customer.name"]);
+        assert_eq!(filter_json_exclude(json, &c).unwrap(), "{}");
     }
 
     #[test]
