@@ -1,3 +1,5 @@
+use crate::error::FilterError;
+
 // ─── Segment ───────────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, PartialEq)]
@@ -11,12 +13,17 @@ pub(crate) enum Segment {
     },
 }
 
-fn parse_selector(s: &str) -> Segment {
+fn parse_selector(s: &str, path: &str) -> Result<Segment, FilterError> {
+    if s.is_empty() {
+        return Err(FilterError::InvalidCriteria(format!(
+            "array selector in '{path}' must not be empty"
+        )));
+    }
     if s == "*" {
-        return Segment::All;
+        return Ok(Segment::All);
     }
     if let Ok(n) = s.parse::<usize>() {
-        return Segment::Index(n);
+        return Ok(Segment::Index(n));
     }
     if let Some(colon_pos) = s.find(':') {
         let start_str = &s[..colon_pos];
@@ -24,23 +31,45 @@ fn parse_selector(s: &str) -> Segment {
         let start = if start_str.is_empty() {
             None
         } else {
-            start_str.parse::<usize>().ok()
+            Some(start_str.parse::<usize>().map_err(|_| {
+                FilterError::InvalidCriteria(format!(
+                    "invalid slice start '{start_str}' in '{path}': expected an integer"
+                ))
+            })?)
         };
         let end = if end_str.is_empty() {
             None
         } else {
-            end_str.parse::<usize>().ok()
+            Some(end_str.parse::<usize>().map_err(|_| {
+                FilterError::InvalidCriteria(format!(
+                    "invalid slice end '{end_str}' in '{path}': expected an integer"
+                ))
+            })?)
         };
-        return Segment::Slice { start, end };
+        if (start, end) == (None, None) {
+            return Ok(Segment::All);
+        }
+        return Ok(Segment::Slice { start, end });
     }
-    Segment::Key(s.to_string())
+    Err(FilterError::InvalidCriteria(format!(
+        "invalid array selector '[{s}]' in '{path}': \
+         expected an integer index, '*', or a slice 'a:b'"
+    )))
 }
 
-pub(crate) fn parse_path(path: &str) -> Vec<Segment> {
+pub(crate) fn parse_path(path: &str) -> Result<Vec<Segment>, FilterError> {
+    if path.is_empty() {
+        return Err(FilterError::InvalidCriteria(
+            "path must not be empty".to_string(),
+        ));
+    }
     let mut segments = Vec::new();
     for dot_segment in path.split('.') {
         if dot_segment.is_empty() {
-            continue;
+            return Err(FilterError::InvalidCriteria(format!(
+                "path '{path}' contains an empty segment \
+                 (check for leading, trailing, or consecutive dots)"
+            )));
         }
         if let Some(bracket_pos) = dot_segment.find('[') {
             let key_part = &dot_segment[..bracket_pos];
@@ -51,17 +80,24 @@ pub(crate) fn parse_path(path: &str) -> Vec<Segment> {
             while remaining.starts_with('[') {
                 if let Some(close) = remaining.find(']') {
                     let selector = &remaining[1..close];
-                    segments.push(parse_selector(selector));
+                    segments.push(parse_selector(selector, path)?);
                     remaining = &remaining[close + 1..];
                 } else {
-                    break;
+                    return Err(FilterError::InvalidCriteria(format!(
+                        "unclosed '[' in path '{path}'"
+                    )));
                 }
+            }
+            if !remaining.is_empty() {
+                return Err(FilterError::InvalidCriteria(format!(
+                    "unexpected characters '{remaining}' after ']' in path '{path}'"
+                )));
             }
         } else {
             segments.push(Segment::Key(dot_segment.to_string()));
         }
     }
-    segments
+    Ok(segments)
 }
 
 // ─── Criteria ──────────────────────────────────────────────────────────────
@@ -76,23 +112,27 @@ pub(crate) fn parse_path(path: &str) -> Vec<Segment> {
 ///
 /// ```
 /// # use filter_json::FilterCriteria;
-/// let c = FilterCriteria::new(&["customer.name"]);
-/// let c2 = FilterCriteria::new(&["items[*].price"]);
+/// let c = FilterCriteria::new(&["customer.name"]).unwrap();
+/// let c2 = FilterCriteria::new(&["items[*].price"]).unwrap();
 /// ```
 pub struct FilterCriteria {
     pub(crate) paths: Vec<Vec<Segment>>,
 }
 
 impl FilterCriteria {
-    pub fn new(paths: &[&str]) -> Self {
-        Self {
-            paths: paths.iter().map(|p| parse_path(p)).collect(),
-        }
+    pub fn new(paths: &[&str]) -> Result<Self, FilterError> {
+        let parsed = paths
+            .iter()
+            .map(|p| parse_path(p))
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(Self { paths: parsed })
     }
 }
 
-impl<'a> From<Vec<&'a str>> for FilterCriteria {
-    fn from(paths: Vec<&'a str>) -> Self {
+impl<'a> TryFrom<Vec<&'a str>> for FilterCriteria {
+    type Error = FilterError;
+
+    fn try_from(paths: Vec<&'a str>) -> Result<Self, FilterError> {
         Self::new(&paths)
     }
 }
@@ -174,5 +214,197 @@ pub(crate) fn exclusion_status(path: &[Segment], criteria: &FilterCriteria) -> I
         InclusionStatus::Recurse
     } else {
         InclusionStatus::Keep
+    }
+}
+
+// ─── Tests ─────────────────────────────────────────────────────────────────
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::error::FilterError;
+
+    fn parsed(path: &str) -> Vec<Segment> {
+        parse_path(path).unwrap()
+    }
+
+    fn is_invalid_criteria(result: Result<FilterCriteria, FilterError>) -> bool {
+        matches!(result, Err(FilterError::InvalidCriteria(_)))
+    }
+
+    // -- Valid paths: check parsed segments --
+
+    #[test]
+    fn valid_simple_key() {
+        assert_eq!(parsed("name"), vec![Segment::Key("name".into())]);
+    }
+
+    #[test]
+    fn valid_nested_key() {
+        assert_eq!(
+            parsed("customer.name"),
+            vec![Segment::Key("customer".into()), Segment::Key("name".into())]
+        );
+    }
+
+    #[test]
+    fn valid_wildcard_selector() {
+        assert_eq!(
+            parsed("items[*].price"),
+            vec![
+                Segment::Key("items".into()),
+                Segment::All,
+                Segment::Key("price".into()),
+            ]
+        );
+    }
+
+    #[test]
+    fn valid_index_selector() {
+        assert_eq!(
+            parsed("items[0].price"),
+            vec![
+                Segment::Key("items".into()),
+                Segment::Index(0),
+                Segment::Key("price".into()),
+            ]
+        );
+    }
+
+    #[test]
+    fn valid_open_slice() {
+        assert_eq!(
+            parsed("items[:3].price"),
+            vec![
+                Segment::Key("items".into()),
+                Segment::Slice {
+                    start: None,
+                    end: Some(3)
+                },
+                Segment::Key("price".into()),
+            ]
+        );
+    }
+
+    #[test]
+    fn valid_closed_slice() {
+        assert_eq!(
+            parsed("items[1:3].price"),
+            vec![
+                Segment::Key("items".into()),
+                Segment::Slice {
+                    start: Some(1),
+                    end: Some(3)
+                },
+                Segment::Key("price".into()),
+            ]
+        );
+    }
+
+    #[test]
+    fn valid_open_ended_slice() {
+        assert_eq!(
+            parsed("items[2:].price"),
+            vec![
+                Segment::Key("items".into()),
+                Segment::Slice {
+                    start: Some(2),
+                    end: None
+                },
+                Segment::Key("price".into()),
+            ]
+        );
+    }
+
+    #[test]
+    fn valid_top_level_array_selector() {
+        assert_eq!(
+            parsed("[*].name"),
+            vec![Segment::All, Segment::Key("name".into())]
+        );
+    }
+
+    #[test]
+    fn valid_slice_to_all() {
+        assert_eq!(
+            parsed("name[:]"),
+            vec![Segment::Key("name".into()), Segment::All]
+        );
+    }
+
+    // -- Invalid paths: empty segments --
+
+    #[test]
+    fn error_on_empty_path() {
+        assert!(is_invalid_criteria(FilterCriteria::new(&[""])));
+    }
+
+    #[test]
+    fn error_on_dot_only() {
+        assert!(is_invalid_criteria(FilterCriteria::new(&["."])));
+    }
+
+    #[test]
+    fn error_on_leading_dot() {
+        assert!(is_invalid_criteria(FilterCriteria::new(&[".name"])));
+    }
+
+    #[test]
+    fn error_on_trailing_dot() {
+        assert!(is_invalid_criteria(FilterCriteria::new(&["name."])));
+    }
+
+    #[test]
+    fn error_on_consecutive_dots() {
+        assert!(is_invalid_criteria(FilterCriteria::new(&[
+            "customer..name"
+        ])));
+    }
+
+    // -- Invalid paths: malformed bracket selectors --
+
+    #[test]
+    fn error_on_empty_bracket_selector() {
+        assert!(is_invalid_criteria(FilterCriteria::new(&["items[]"])));
+    }
+
+    #[test]
+    fn error_on_unclosed_bracket() {
+        assert!(is_invalid_criteria(FilterCriteria::new(&["items["])));
+    }
+
+    #[test]
+    fn error_on_non_numeric_bracket_selector() {
+        assert!(is_invalid_criteria(FilterCriteria::new(&["items[abc]"])));
+    }
+
+    #[test]
+    fn error_on_invalid_slice_start() {
+        assert!(is_invalid_criteria(FilterCriteria::new(&["items[abc:2]"])));
+    }
+
+    #[test]
+    fn error_on_invalid_slice_end() {
+        assert!(is_invalid_criteria(FilterCriteria::new(&["items[1:xyz]"])));
+    }
+
+    #[test]
+    fn error_on_trailing_chars_after_bracket() {
+        assert!(is_invalid_criteria(FilterCriteria::new(&["items[0]extra"])));
+    }
+
+    #[test]
+    fn error_on_trailing_close_brackets() {
+        assert!(is_invalid_criteria(FilterCriteria::new(&["items[0]]]"])));
+    }
+
+    // -- Error propagates across all paths --
+
+    #[test]
+    fn error_reported_for_second_path_in_list() {
+        assert!(is_invalid_criteria(FilterCriteria::new(&[
+            "valid.path",
+            "bad..path"
+        ])));
     }
 }
