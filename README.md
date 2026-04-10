@@ -21,7 +21,7 @@ filter_json = "0.1"
 use filter_json::{filter_json, FilterCriteria};
 
 let json = r#"{"customer": {"name": "Alice", "age": 30}, "order_id": "ORD-1"}"#;
-let criteria = FilterCriteria::new(&["customer.name"]);
+let criteria = FilterCriteria::new(&["customer.name"]).unwrap();
 let result = filter_json(json, &criteria).unwrap();
 
 assert_eq!(result, r#"{"customer":{"name":"Alice"}}"#);
@@ -30,7 +30,7 @@ assert_eq!(result, r#"{"customer":{"name":"Alice"}}"#);
 Multiple paths are supported — include fields from anywhere in the document in one pass:
 
 ```rust
-let criteria = FilterCriteria::new(&["customer.name", "order_id"]);
+let criteria = FilterCriteria::new(&["customer.name", "order_id"]).unwrap();
 let result = filter_json(json, &criteria).unwrap();
 
 assert_eq!(result, r#"{"customer":{"name":"Alice"},"order_id":"ORD-1"}"#);
@@ -42,7 +42,7 @@ assert_eq!(result, r#"{"customer":{"name":"Alice"},"order_id":"ORD-1"}"#);
 use filter_json::{filter_json_exclude, FilterCriteria};
 
 let json = r#"{"name": "Alice", "secret_token": "abc123", "score": 99}"#;
-let criteria = FilterCriteria::new(&["secret_token"]);
+let criteria = FilterCriteria::new(&["secret_token"]).unwrap();
 let result = filter_json_exclude(json, &criteria).unwrap();
 
 assert_eq!(result, r#"{"name":"Alice","score":99}"#);
@@ -54,13 +54,13 @@ assert_eq!(result, r#"{"name":"Alice","score":99}"#);
 
 ```rust
 // From a slice of path strings
-let c = FilterCriteria::new(&["shipping.address.city", "order_id"]);
+let c = FilterCriteria::new(&["shipping.address.city", "order_id"]).unwrap();
 
 // From a Vec<&str>
-let c = FilterCriteria::from(vec!["customer.name"]);
+let c = FilterCriteria::try_from(vec!["customer.name"]).unwrap();
 ```
 
-Paths are dot-separated key names that describe a route through the JSON object hierarchy. `"a.b.c"` means the key `c` inside `b` inside `a`.
+`FilterCriteria::new` returns `Result<FilterCriteria, FilterError>` and validates every path at construction time. Invalid paths (see [Path syntax](#path-syntax) below) return `Err(FilterError::InvalidCriteria(...))` with a description of the problem.
 
 ### `filter_json`
 
@@ -82,10 +82,39 @@ Returns a new JSON string with the matched keys removed. Output is compact. Retu
 
 ```rust
 pub enum FilterError {
-    InvalidJson(String),  // malformed JSON with a description
-    UnexpectedEof,        // input ended mid-value
+    InvalidJson(String),      // malformed JSON with a description
+    UnexpectedEof,            // input ended mid-value
+    InvalidCriteria(String),  // bad path syntax with a description
 }
 ```
+
+## Path syntax
+
+Paths are dot-separated key names that describe a route through the JSON hierarchy. Array elements are selected with bracket notation after the key name.
+
+| Syntax | Meaning |
+|---|---|
+| `name` | Top-level key `name` |
+| `customer.name` | Key `name` nested inside `customer` |
+| `items[*].price` | `price` field of every element in `items` |
+| `items[0].price` | `price` field of the first element only |
+| `items[:3].price` | `price` field of the first three elements |
+| `items[1:4].price` | `price` field of elements at index 1, 2, and 3 |
+| `items[2:].price` | `price` field of all elements from index 2 onwards |
+| `[*].name` | `name` field of every element in a top-level array |
+| `[:]` | Every element of a top-level array (equivalent to `[*]`) |
+
+### Validation
+
+Paths are validated when `FilterCriteria::new` is called. The following are all errors:
+
+- Empty string
+- Leading, trailing, or consecutive dots (`.name`, `name.`, `a..b`)
+- Empty bracket selector (`items[]`)
+- Unclosed bracket (`items[`)
+- Non-integer, non-wildcard bracket content (`items[abc]`)
+- Invalid slice bounds (`items[x:3]`, `items[1:y]`)
+- Trailing characters after a closing bracket (`items[0]extra`)
 
 ## Behaviour notes
 
@@ -95,13 +124,14 @@ pub enum FilterError {
 
 ```rust
 // Includes the full "payment" object with all its nested fields
-let c = FilterCriteria::new(&["payment"]);
+let c = FilterCriteria::new(&["payment"]).unwrap();
 ```
 
-**Arrays in exclusion mode.** When an exclusion path leads into an array, the criteria are applied to each element. `"items.price"` removes `price` from every object in the `items` array:
+**Array selectors apply to both inclusion and exclusion.** `[*]` recurses into every element; `[n]` targets a specific index; slices target a range:
 
 ```rust
-let c = FilterCriteria::new(&["items.price"]);
+// Removes "price" from every object in the "items" array
+let c = FilterCriteria::new(&["items[*].price"]).unwrap();
 // {"items":[{"sku":"A","price":10},{"sku":"B","price":20}]}
 // → {"items":[{"sku":"A"},{"sku":"B"}]}
 ```
