@@ -1,4 +1,4 @@
-use filter_json::{filter_json, filter_json_exclude, FilterCriteria};
+use filter_json::{FilterCriteria, filter_json, filter_json_exclude};
 use std::fs;
 
 fn fixture(name: &str) -> String {
@@ -61,7 +61,10 @@ fn include_nested_boolean() {
 #[test]
 fn include_two_nested_booleans() {
     let json = fixture("user_profile.json");
-    let c = FilterCriteria::new(&["settings.notifications.email", "settings.notifications.push"]);
+    let c = FilterCriteria::new(&[
+        "settings.notifications.email",
+        "settings.notifications.push",
+    ]);
     assert_eq!(
         filter_json(&json, &c).unwrap(),
         r#"{"settings":{"notifications":{"email":true,"push":true}}}"#
@@ -129,7 +132,10 @@ fn exclude_entire_top_level_subtree() {
     let c = FilterCriteria::new(&["payment"]);
     let result = filter_json_exclude(&json, &c).unwrap();
     assert!(!result.contains("payment"), "should not contain payment");
-    assert!(!result.contains("credit_card"), "should not contain credit_card");
+    assert!(
+        !result.contains("credit_card"),
+        "should not contain credit_card"
+    );
     assert!(result.contains("order_id"), "should contain order_id");
     assert!(result.contains("customer"), "should contain customer");
 }
@@ -140,9 +146,15 @@ fn exclude_nested_field_preserves_siblings() {
     let c = FilterCriteria::new(&["customer.phone"]);
     let result = filter_json_exclude(&json, &c).unwrap();
     assert!(!result.contains("phone"), "should not contain phone");
-    assert!(!result.contains("+1-555-0100"), "should not contain phone value");
+    assert!(
+        !result.contains("+1-555-0100"),
+        "should not contain phone value"
+    );
     assert!(result.contains("Alice Smith"), "should contain name value");
-    assert!(result.contains("alice@example.com"), "should contain email value");
+    assert!(
+        result.contains("alice@example.com"),
+        "should contain email value"
+    );
 }
 
 #[test]
@@ -151,7 +163,10 @@ fn exclude_multiple_top_level_fields() {
     let c = FilterCriteria::new(&["payment", "status"]);
     let result = filter_json_exclude(&json, &c).unwrap();
     assert!(!result.contains("payment"), "should not contain payment");
-    assert!(!result.contains("shipped"), "should not contain status value");
+    assert!(
+        !result.contains("shipped"),
+        "should not contain status value"
+    );
     assert!(result.contains("order_id"), "should contain order_id");
     assert!(result.contains("items"), "should contain items");
 }
@@ -159,10 +174,16 @@ fn exclude_multiple_top_level_fields() {
 #[test]
 fn exclude_field_from_nested_array_elements() {
     let json = fixture("ecommerce_order.json");
-    let c = FilterCriteria::new(&["items.price"]);
+    let c = FilterCriteria::new(&["items[*].price"]);
     let result = filter_json_exclude(&json, &c).unwrap();
-    assert!(!result.contains("\"price\""), "should not contain price key");
-    assert!(!result.contains("10.50"), "should not contain first price value");
+    assert!(
+        !result.contains("\"price\""),
+        "should not contain price key"
+    );
+    assert!(
+        !result.contains("10.50"),
+        "should not contain first price value"
+    );
     assert!(result.contains("WIDGET-A"), "should contain first sku");
     assert!(result.contains("GADGET-B"), "should contain second sku");
 }
@@ -173,7 +194,50 @@ fn exclude_deeply_nested_field() {
     let c = FilterCriteria::new(&["settings.privacy"]);
     let result = filter_json_exclude(&json, &c).unwrap();
     assert!(!result.contains("privacy"), "should not contain privacy");
-    assert!(!result.contains("show_email"), "should not contain show_email");
+    assert!(
+        !result.contains("show_email"),
+        "should not contain show_email"
+    );
     assert!(result.contains("theme"), "should contain theme");
-    assert!(result.contains("notifications"), "should contain notifications");
+    assert!(
+        result.contains("notifications"),
+        "should contain notifications"
+    );
+}
+
+#[test]
+fn company_data() {
+    let json = fixture("company_data.json");
+    let c = FilterCriteria::new(&[
+        "scores_and_limits.limit_history[*].credit_limit",
+        "scores_and_limits.limit_history[*].cs_company_id",
+    ]);
+    let result = filter_json(&json, &c).unwrap();
+    println!("{result}");
+}
+
+#[test]
+fn include_field_from_array_elements() {
+    let json = fixture("ecommerce_order.json");
+    let c = FilterCriteria::new(&["items[*].sku"]);
+    let result = filter_json(&json, &c).unwrap();
+    assert!(result.contains("WIDGET-A"), "should contain first sku");
+    assert!(result.contains("GADGET-B"), "should contain second sku");
+    assert!(!result.contains("price"), "should not contain price");
+    assert!(!result.contains("qty"), "should not contain qty");
+}
+
+#[test]
+fn include_single_array_element() {
+    let json = fixture("ecommerce_order.json");
+    let c = FilterCriteria::new(&["items[1]"]);
+    let result = filter_json(&json, &c).unwrap();
+    assert!(
+        result.contains("GADGET-B"),
+        "should contain second item sku"
+    );
+    assert!(
+        !result.contains("WIDGET-A"),
+        "should not contain first item sku"
+    );
 }

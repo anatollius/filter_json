@@ -12,6 +12,8 @@ pyo3 = { version = "0.27.0", features = ["extension-module"], optional = true }
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
+serde = "1.0.228"
+serde_json = "1.0.149"
 
 [[bench]]
 name = "filter"

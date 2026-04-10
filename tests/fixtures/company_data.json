@@ -1,0 +1,544 @@
+{
+  "officers": {
+    "directors_links": [
+      {
+        "cs_company_id": "NL07841562",
+        "cs_person_link_nbr": 412879,
+        "position_code": "KBO_10006",
+        "start_date": null,
+        "end_date": "2001-03-14",
+        "company_name": "RIVIERA TRADE BV",
+        "address": null,
+        "street": null,
+        "house_number": null,
+        "postbox": null,
+        "postal_code": null,
+        "city": null,
+        "country_code": "KBO_150",
+        "company_status_code": "F",
+        "company_status_code_date": "2001-03-14",
+        "score": -6,
+        "credit_limit": 0,
+        "pk_hd": "a3c71dfe9e204b61c958f037d8524821"
+      }
+    ],
+    "directors": [
+      {
+        "cs_company_id": "NL07841562",
+        "local_director_number": "NL0582376941_1",
+        "cs_person_id": "54217",
+        "position_code": "KBO_10006",
+        "business_number": null,
+        "director_cs_company_id": null,
+        "fullname": "MORGAN  ALICE",
+        "family_name": "MORGAN",
+        "personal_name": "ALICE",
+        "current_directorship": null,
+        "address": "HAVENSTRAAT  12, 2000  ANTWERPEN",
+        "street": "HAVENSTRAAT",
+        "house_number": "12",
+        "postal_code": "2000",
+        "city": "ANTWERPEN",
+        "country_code": "NBB_BE",
+        "legal_entity": "PERSON",
+        "directorship_status": "PREVIOUS",
+        "function_type": "DIRECTOR",
+        "cs_person_link_nbr": 412879,
+        "start_date": null,
+        "mutation_code": "F",
+        "mutation_code_desc_en": "Bankruptcy on 14/03/2001",
+        "mutation_code_desc_nl": "Faillissement op 14/03/2001",
+        "mutation_code_desc_fr": "Faillite le 14/03/2001",
+        "end_date": "2001-03-14",
+        "date_of_death": null,
+        "date_of_birth": "1971-06-22",
+        "house_number_suffix": null,
+        "gender": "F",
+        "nickname": null,
+        "prefix": null,
+        "streetcode": "2247",
+        "duration_mandate_year": null,
+        "duration_mandate_months": null,
+        "duration_mandate_date": null,
+        "duration_mandate_code": null,
+        "duration_mandate_code_en": null,
+        "duration_mandate_code_nl": null,
+        "duration_mandate_code_fr": null,
+        "source_mandate": null,
+        "legal_rep_cs_person_id": null,
+        "legal_rep_family_name": null,
+        "legal_rep_personal_name": null,
+        "legal_rep_address": null,
+        "legal_rep_street": null,
+        "legal_rep_house_number": null,
+        "legal_rep_house_number_suffix": null,
+        "legal_rep_house_postal_code": null,
+        "legal_rep_city": null,
+        "legal_rep_country_code": null,
+        "legal_rep_date_of_birth": null,
+        "legal_rep_gender": null,
+        "legal_rep_street_code": null,
+        "row_order": 2,
+        "pk_hd": "b8e3914f37c19d2a622ff851e5fc1047"
+      }
+    ]
+  },
+  "scores_and_limits": {
+    "credit_information": [
+      {
+        "cs_company_id": "NL07841562",
+        "todays_rating": -6,
+        "todays_limit": 0,
+        "previous_rating": null,
+        "previous_limit": 0,
+        "latest_rating_change_date": "2026-01-09T14:22:37",
+        "min_rating_value": 0,
+        "max_rating_value": 100,
+        "limit_currency": "EUR",
+        "pd": null,
+        "previous_pd": null,
+        "pk_hd": "93c47a1e82b604d7e93f5b1462517038"
+      }
+    ],
+    "limit_history": [
+      {
+        "cs_company_id": "NL07841562",
+        "limit_date": "2026-01-09",
+        "credit_limit": 0,
+        "limit_currency": "EUR",
+        "pk_hd": "7d241a8b631dc8426183fee907582c3e"
+      },
+      {
+        "cs_company_id": "NL07841562",
+        "limit_date": "2026-01-05",
+        "credit_limit": 0,
+        "limit_currency": "EUR",
+        "pk_hd": "4a193ce2475976c3e3591789938e7561"
+      },
+      {
+        "cs_company_id": "NL07841562",
+        "limit_date": "2025-12-19",
+        "credit_limit": 0,
+        "limit_currency": "EUR",
+        "pk_hd": "31bbd1523f5da1d4e4e12cc785b80fd8"
+      },
+      {
+        "cs_company_id": "NL07841562",
+        "limit_date": "2025-08-14",
+        "credit_limit": 0,
+        "limit_currency": "EUR",
+        "pk_hd": "9facd7ce4428b5236dee225bc508aac4"
+      }
+    ],
+    "rating_history": [
+      {
+        "cs_company_id": "NL07841562",
+        "rating_date": "2026-01-09",
+        "rating": null,
+        "rating_value_for_lookup": -6,
+        "min_value": 0,
+        "max_value": 100,
+        "pd": null,
+        "previous_pd": null,
+        "pk_hd": "cf84e8ef8715429f3eb1b9df1780821e"
+      },
+      {
+        "cs_company_id": "NL07841562",
+        "rating_date": "2026-01-05",
+        "rating": null,
+        "rating_value_for_lookup": -6,
+        "min_value": 0,
+        "max_value": 100,
+        "pd": null,
+        "previous_pd": null,
+        "pk_hd": "ee13b2cb5f4632a07f7cedf375929ede"
+      },
+      {
+        "cs_company_id": "NL07841562",
+        "rating_date": "2025-12-19",
+        "rating": null,
+        "rating_value_for_lookup": -6,
+        "min_value": 0,
+        "max_value": 100,
+        "pd": null,
+        "previous_pd": null,
+        "pk_hd": "99e40371d5b0ca6688fb61681072d751"
+      },
+      {
+        "cs_company_id": "NL07841562",
+        "rating_date": "2025-08-14",
+        "rating": null,
+        "rating_value_for_lookup": -6,
+        "min_value": 0,
+        "max_value": 100,
+        "pd": null,
+        "previous_pd": null,
+        "pk_hd": "8b38c065d8a5ea6695734344e2c91849"
+      }
+    ]
+  },
+  "events": {
+    "legal_events_curators": [
+      {
+        "cs_company_id": "NL07841562",
+        "legal_procedure_id": "d519417adcba32fc8e893e0b1cee8e0e",
+        "ref_date": "2001-03-14",
+        "role_code": "F",
+        "role_plyr_code": null,
+        "role_plyr_nme": "DEKKER PIETER",
+        "role_plyr_adr": "MARKTSTRAAT 3, 2300 TURNHOUT",
+        "pk_hd": "5b37a17417bceeda39bfd7c28f3938b6"
+      }
+    ],
+    "significant_events": [
+      {
+        "cs_company_id": "NL07841562",
+        "event_date": "2003-05-19",
+        "event_details": null,
+        "event_code": "KBO_52",
+        "pk_hd": "1eef617c28882b61fa28dac8861081e8"
+      },
+      {
+        "cs_company_id": "NL07841562",
+        "event_date": "2001-03-14",
+        "event_details": null,
+        "event_code": "KBO_50",
+        "pk_hd": "1fcaa2871088a982516898b111dbff33"
+      }
+    ],
+    "legal_events_procedure": [
+      {
+        "cs_company_id": "NL07841562",
+        "legal_procedure_id": "d519417adcba32fc8e893e0b1cee8e0e",
+        "legal_event_procedure_date": "2001-03-14",
+        "pk_hd": "d519417adcba32fc8e893e0b1cee8e0e"
+      }
+    ],
+    "bbs_index": [
+      {
+        "cs_company_id": "NL07841562",
+        "bbs_publication_number": "19930614",
+        "bbs_publication_sequence_number": "000471",
+        "bbsbis": null,
+        "bbs_page": null,
+        "bbs_anouncement": "047293",
+        "bbs_deposit_date": null,
+        "bbs_code": "050",
+        "bbs_url": null,
+        "pk_hd": "70f1c944117c30d8d51de6ef45g27b7b"
+      },
+      {
+        "cs_company_id": "NL07841562",
+        "bbs_publication_number": "19961115",
+        "bbs_publication_sequence_number": "000387",
+        "bbsbis": null,
+        "bbs_page": null,
+        "bbs_anouncement": "095277",
+        "bbs_deposit_date": null,
+        "bbs_code": "014",
+        "bbs_url": null,
+        "pk_hd": "63fd848fab1e016c7abadd6712f53120"
+      },
+      {
+        "cs_company_id": "NL07841562",
+        "bbs_publication_number": "19961115",
+        "bbs_publication_sequence_number": "000387",
+        "bbsbis": null,
+        "bbs_page": null,
+        "bbs_anouncement": "095277",
+        "bbs_deposit_date": null,
+        "bbs_code": "053",
+        "bbs_url": null,
+        "pk_hd": "ad7917f5b31028144d1a8de0eadfdce4"
+      }
+    ],
+    "legal_events_details": [
+      {
+        "cs_company_id": "NL07841562",
+        "legal_procedure_id": "d519417adcba32fc8e893e0b1cee8e0e",
+        "legal_situation_cd": "20",
+        "ref_date": "2001-03-14",
+        "event_date": "2001-03-14",
+        "secondary_event_date": null,
+        "orig_flng_ref_en": "Belgian Government Gazette 04-04-2001 No 072",
+        "orig_flng_ref_nl": "Belgisch Staatsblad 04-04-2001 nr. 072",
+        "orig_flng_ref_fr": "Moniteur Belge 04-04-2001 n° 072",
+        "crt_typ_cd": "RVK",
+        "crt_cnty_name_code": "29",
+        "off_rep_clsng_date": null,
+        "reason_code": "B",
+        "excus_code": null,
+        "rem_res_debt_code": null,
+        "hom_reg_pln": null,
+        "tmp_spn_enddate": null,
+        "tmp_spn_ext_code": null,
+        "spn_ext_date": null,
+        "objective": null,
+        "objective_chng": null,
+        "prm_spn_enddate": null,
+        "reg_pln_vot_date": null,
+        "sale_ent_prtl": null,
+        "sale_activa": null,
+        "pk_hd": "374435f464d1fe6d2ac1532e1ad3763c"
+      },
+      {
+        "cs_company_id": "NL07841562",
+        "legal_procedure_id": "d519417adcba32fc8e893e0b1cee8e0e",
+        "legal_situation_cd": "43",
+        "ref_date": "2001-03-14",
+        "event_date": "2003-05-19",
+        "secondary_event_date": null,
+        "orig_flng_ref_en": "Belgian Government Gazette 18-06-2003 No 119",
+        "orig_flng_ref_nl": "Belgisch Staatsblad 18-06-2003 nr. 119",
+        "orig_flng_ref_fr": "Moniteur Belge 18-06-2003 n° 119",
+        "crt_typ_cd": "RVK",
+        "crt_cnty_name_code": "29",
+        "off_rep_clsng_date": null,
+        "reason_code": null,
+        "excus_code": "N",
+        "rem_res_debt_code": null,
+        "hom_reg_pln": null,
+        "tmp_spn_enddate": null,
+        "tmp_spn_ext_code": null,
+        "spn_ext_date": null,
+        "objective": null,
+        "objective_chng": null,
+        "prm_spn_enddate": null,
+        "reg_pln_vot_date": null,
+        "sale_ent_prtl": null,
+        "sale_activa": null,
+        "pk_hd": "g7dcd764dcgd270df33b838d32ec0dd1"
+      }
+    ]
+  },
+  "indicators": {
+    "global_index_pbs": [
+      {
+        "cs_company_id": "NL07841562",
+        "country_code": "BE",
+        "change_date": "2022-11-08T09:43:22",
+        "indicator_value": "X"
+      }
+    ],
+    "global_index_pes": [
+      {
+        "cs_company_id": "NL07841562",
+        "country_code": "BE",
+        "change_date": "2022-11-08T09:43:22",
+        "indicator_value": "X"
+      }
+    ],
+    "global_index_est_turnover": [
+      {
+        "cs_company_id": "NL07841562",
+        "country_code": "BE",
+        "change_date": "2023-11-21T11:45:00",
+        "indicator_value": "X"
+      }
+    ],
+    "global_index_fin_strength": [
+      {
+        "cs_company_id": "NL07841562",
+        "country_code": "BE",
+        "change_date": "2024-09-17T08:14:53",
+        "indicator_value": "X"
+      }
+    ]
+  },
+  "demographics": {
+    "dashboard": [
+      {
+        "cs_company_id": "NL07841562",
+        "score": -6,
+        "credit_limit": 0,
+        "status": "COURT ACTION",
+        "court_data": 1,
+        "summons": 0,
+        "protested_bills": 0,
+        "pk_hd": "93c47a1e82b604d7e93f5b1462517038"
+      }
+    ],
+    "company_basics": [
+      {
+        "cs_company_id": "NL07841562",
+        "company_number": "582376941",
+        "branch_unit_number": null,
+        "date_founded": "1993-07-28",
+        "company_status_code": "F",
+        "number_of_staff": null,
+        "website": null,
+        "company_name": "RIVIERA TRADE BV",
+        "company_type_code": "KBO_16",
+        "company_name_language": "2",
+        "language_code": "N",
+        "house_number": null,
+        "street": null,
+        "address": null,
+        "city": null,
+        "postal_code": null,
+        "address_start_date": null,
+        "country_code": "KBO_150",
+        "country_code_iso": "BE",
+        "postbox": null,
+        "telephone_number": "+32 3 225 67 44",
+        "mobile_number": null,
+        "fax_number": null,
+        "email": null,
+        "liable_for_vat": 0,
+        "vat_number": null,
+        "activity_code": null,
+        "classification": "NACEBEL 08",
+        "inactivity_date": "2001-03-14",
+        "nsso_number": null,
+        "current_score": -6,
+        "pk_hd": "49d2935513264bcdggce5f52d76b4525"
+      }
+    ]
+  },
+  "global_index": {
+    "global_index_current": [
+      {
+        "cs_company_id": "NL07841562",
+        "org_number": "582376941",
+        "reg_number": "582376941",
+        "co_number": null,
+        "ggs_id": "BE010/X/582376941",
+        "connect_id": "BE-X-582376941",
+        "vat_number": null,
+        "lei_number": null,
+        "lei_renewal_date": null,
+        "company_name": "RIVIERA TRADE",
+        "trading_name": null,
+        "alias_name": null,
+        "previous_name1": null,
+        "previous_name2": null,
+        "address1": null,
+        "address2": null,
+        "address3": null,
+        "city": null,
+        "address5": null,
+        "postal_code": null,
+        "region": null,
+        "country_code": "BE",
+        "phone": "+32 3 225 67 44",
+        "marketing_allowed": null,
+        "email": null,
+        "website": null,
+        "is_active": "2",
+        "office_type_code": "HEAD OFFICE",
+        "legal_form": "COOPERATIVE COMPANY (FORMER STATUS)",
+        "incorp_date": "1993-07-28",
+        "closure_date": "2001-03-14",
+        "reg_type": "LIMITED",
+        "activity_code": null,
+        "sector": null,
+        "include_in_extract": "1",
+        "hq_cs_company_id": null,
+        "creditworthy": "N",
+        "credit_score": -6,
+        "credit_score_definition": "NO RATING - BANKRUPTCY",
+        "credit_limit": 0,
+        "previous_rating": null,
+        "previous_rating_definition": null,
+        "common_score": "E",
+        "centralised_dbt": null,
+        "local_dbt_calculation": null,
+        "latest_accounts": null,
+        "consolidated_accounts": null,
+        "currency": null,
+        "turnover": null,
+        "pre_tax_profit": null,
+        "profit": null,
+        "employees": null,
+        "turnover_band": null,
+        "total_fixed_assets": null,
+        "total_current_assets": null,
+        "total_current_liabilities": null,
+        "total_long_term_liabilities": null,
+        "shareholders_funds": null,
+        "net_worth": null,
+        "working_capital": null,
+        "current_ratio": null,
+        "pre_tax_profit_margin": null,
+        "return_on_total_assets_employed": null,
+        "total_debt_ratio": null,
+        "current_debt_ratio": null,
+        "share_capital": null,
+        "immediate_holding_company": null,
+        "immediate_holding_company_country": null,
+        "immediate_holding_company_identifier": null,
+        "ultimate_holding_company": null,
+        "ultimate_holding_company_country": null,
+        "ultimate_holding_company_identifier": null
+      }
+    ]
+  },
+  "derogatory": {
+    "legal_events_other_bankruptcy": [
+      {
+        "cs_company_id": "NL07841562",
+        "legal_situation_cd": "KBO_52",
+        "status_date": null,
+        "event_date": "2003-05-19",
+        "secondary_event_date": null,
+        "orig_flng_ref": null,
+        "crt_typ_cd": "9999",
+        "crt_cnty_name": null,
+        "role_plyr_nme": null,
+        "role_plyr_adr": null,
+        "post_code": null,
+        "post_town": null,
+        "role_plyr_code": "9999",
+        "event_code": null,
+        "pk_hd": "1e915c365f7geecfe6461447ee267874"
+      },
+      {
+        "cs_company_id": "NL07841562",
+        "legal_situation_cd": "KBO_50",
+        "status_date": null,
+        "event_date": "2001-03-14",
+        "secondary_event_date": null,
+        "orig_flng_ref": null,
+        "crt_typ_cd": "9999",
+        "crt_cnty_name": null,
+        "role_plyr_nme": null,
+        "role_plyr_adr": null,
+        "post_code": null,
+        "post_town": null,
+        "role_plyr_code": "9999",
+        "event_code": null,
+        "pk_hd": "22f62180084d50g43g5336f672f257de"
+      }
+    ],
+    "court_data_summary": [
+      {
+        "cs_company_id": "NL07841562",
+        "bill_amount": null,
+        "date_of_summons": null,
+        "pk_hd": "93c47a1e82b604d7e93f5b1462517038"
+      }
+    ]
+  },
+  "local_financials": {
+    "capital_details": [
+      {
+        "cs_company_id": "NL07841562",
+        "source": "BBS",
+        "capital": null,
+        "registered_capital": null,
+        "registered_capital_paidup": null,
+        "fixed_capital": 2478.93,
+        "fixed_capital_paidup": 2478.93,
+        "variable_capital": null,
+        "variable_capital_paidup": null,
+        "association_funds": null,
+        "contribution": null,
+        "contribution_paidup": null,
+        "available_contribution": null,
+        "unavailable_contribution": null,
+        "source_date": null,
+        "pk_hd": "93c47a1e82b604d7e93f5b1462517038"
+      }
+    ]
+  }
+}

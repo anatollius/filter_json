@@ -178,6 +178,8 @@ version = "0.1.0"
 dependencies = [
  "criterion",
  "pyo3",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
