@@ -304,7 +304,7 @@ impl<'a> Parser<'a> {
             self.skip_whitespace();
             let key = self.parse_string()?;
             let mut child_path = path.to_vec();
-            child_path.push(Segment::Key(key.clone()));
+            child_path.push(Segment::Key(&key));
 
             self.skip_whitespace();
             self.expect(b':')?;
@@ -459,7 +459,7 @@ impl<'a> Parser<'a> {
             self.skip_whitespace();
             let key = self.parse_string()?;
             let mut child_path = path.to_vec();
-            child_path.push(Segment::Key(key.clone()));
+            child_path.push(Segment::Key(&key));
 
             self.skip_whitespace();
             self.expect(b':')?;

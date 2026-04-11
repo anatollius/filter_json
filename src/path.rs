@@ -3,8 +3,8 @@ use crate::error::FilterError;
 // ─── Segment ───────────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, PartialEq)]
-pub(crate) enum Segment {
-    Key(String),
+pub(crate) enum Segment<'a> {
+    Key(&'a str),
     Index(usize),
     All,
     Slice {
@@ -13,7 +13,7 @@ pub(crate) enum Segment {
     },
 }
 
-fn parse_selector(s: &str, path: &str) -> Result<Segment, FilterError> {
+fn parse_selector<'a>(s: &str, path: &'a str) -> Result<Segment<'a>, FilterError> {
     if s.is_empty() {
         return Err(FilterError::InvalidCriteria(format!(
             "array selector in '{path}' must not be empty"
@@ -57,7 +57,7 @@ fn parse_selector(s: &str, path: &str) -> Result<Segment, FilterError> {
     )))
 }
 
-pub(crate) fn parse_path(path: &str) -> Result<Vec<Segment>, FilterError> {
+pub(crate) fn parse_path<'a>(path: &'a str) -> Result<Vec<Segment<'a>>, FilterError> {
     if path.is_empty() {
         return Err(FilterError::InvalidCriteria(
             "path must not be empty".to_string(),
@@ -74,7 +74,7 @@ pub(crate) fn parse_path(path: &str) -> Result<Vec<Segment>, FilterError> {
         if let Some(bracket_pos) = dot_segment.find('[') {
             let key_part = &dot_segment[..bracket_pos];
             if !key_part.is_empty() {
-                segments.push(Segment::Key(key_part.to_string()));
+                segments.push(Segment::Key(key_part));
             }
             let mut remaining = &dot_segment[bracket_pos..];
             while remaining.starts_with('[') {
@@ -94,7 +94,7 @@ pub(crate) fn parse_path(path: &str) -> Result<Vec<Segment>, FilterError> {
                 )));
             }
         } else {
-            segments.push(Segment::Key(dot_segment.to_string()));
+            segments.push(Segment::Key(dot_segment));
         }
     }
     Ok(segments)
@@ -115,12 +115,12 @@ pub(crate) fn parse_path(path: &str) -> Result<Vec<Segment>, FilterError> {
 /// let c = FilterCriteria::new(&["customer.name"]).unwrap();
 /// let c2 = FilterCriteria::new(&["items[*].price"]).unwrap();
 /// ```
-pub struct FilterCriteria {
-    pub(crate) paths: Vec<Vec<Segment>>,
+pub struct FilterCriteria<'a> {
+    pub(crate) paths: Vec<Vec<Segment<'a>>>,
 }
 
-impl FilterCriteria {
-    pub fn new(paths: &[&str]) -> Result<Self, FilterError> {
+impl<'a> FilterCriteria<'a> {
+    pub fn new(paths: &[&'a str]) -> Result<Self, FilterError> {
         let parsed = paths
             .iter()
             .map(|p| parse_path(p))
@@ -129,7 +129,7 @@ impl FilterCriteria {
     }
 }
 
-impl<'a> TryFrom<Vec<&'a str>> for FilterCriteria {
+impl<'a> TryFrom<Vec<&'a str>> for FilterCriteria<'a> {
     type Error = FilterError;
 
     fn try_from(paths: Vec<&'a str>) -> Result<Self, FilterError> {
@@ -224,7 +224,7 @@ mod tests {
     use super::*;
     use crate::error::FilterError;
 
-    fn parsed(path: &str) -> Vec<Segment> {
+    fn parsed<'a>(path: &'a str) -> Vec<Segment<'a>> {
         parse_path(path).unwrap()
     }
 
