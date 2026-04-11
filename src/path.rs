@@ -151,20 +151,22 @@ pub(crate) fn segment_matches(criterion: &Segment, runtime: &Segment) -> bool {
     }
 }
 
-pub(crate) fn criterion_matches_path(criterion: &[Segment], path: &[Segment]) -> bool {
+pub(crate) fn criterion_matches_path(criterion: &[Segment], path: &PathNode) -> bool {
     criterion.len() == path.len()
         && criterion
             .iter()
+            .rev()
             .zip(path.iter())
-            .all(|(c, r)| segment_matches(c, r))
+            .all(|(c, pi)| segment_matches(c, &pi.segment))
 }
 
-pub(crate) fn criterion_is_prefix_of(criterion: &[Segment], path: &[Segment]) -> bool {
+pub(crate) fn criterion_is_prefix_of(criterion: &[Segment], path: &PathNode) -> bool {
     criterion.len() > path.len()
         && criterion[..path.len()]
             .iter()
+            .rev()
             .zip(path.iter())
-            .all(|(c, r)| segment_matches(c, r))
+            .all(|(c, pi)| segment_matches(c, &pi.segment))
 }
 
 // ─── Status types ──────────────────────────────────────────────────────────
@@ -179,7 +181,7 @@ pub(crate) enum InclusionStatus {
     Skip,
 }
 
-pub(crate) fn inclusion_status(path: &[Segment], criteria: &FilterCriteria) -> InclusionStatus {
+pub(crate) fn inclusion_status(path: &PathNode, criteria: &FilterCriteria) -> InclusionStatus {
     let mut found_prefix = false;
     for criterion in criteria.paths.as_slice() {
         if criterion_matches_path(criterion, path) {
@@ -198,7 +200,7 @@ pub(crate) fn inclusion_status(path: &[Segment], criteria: &FilterCriteria) -> I
     }
 }
 
-pub(crate) fn exclusion_status(path: &[Segment], criteria: &FilterCriteria) -> InclusionStatus {
+pub(crate) fn exclusion_status(path: &PathNode, criteria: &FilterCriteria) -> InclusionStatus {
     let mut found_prefix = false;
     for criterion in criteria.paths.as_slice() {
         if criterion_matches_path(criterion, path) {
@@ -214,6 +216,66 @@ pub(crate) fn exclusion_status(path: &[Segment], criteria: &FilterCriteria) -> I
         InclusionStatus::Recurse
     } else {
         InclusionStatus::Keep
+    }
+}
+
+// ─── PathNode ──────────────────────────────────────────────────────────
+
+#[derive(Debug)]
+pub(crate) enum PathNode<'a> {
+    Root,
+    Child(PathItem<'a>),
+}
+
+#[derive(Debug)]
+pub(crate) struct PathItem<'a> {
+    pub segment: Segment<'a>,
+    pub parent: &'a PathNode<'a>,
+    pub depth: usize,
+}
+
+impl<'a> PathNode<'a> {
+    pub fn create_child(segment: Segment<'a>, parent: &'a PathNode) -> PathNode<'a> {
+        match parent {
+            PathNode::Child(pi) => PathNode::Child(PathItem {
+                segment: segment,
+                parent: parent,
+                depth: pi.depth + 1,
+            }),
+            PathNode::Root => PathNode::Child(PathItem {
+                segment: segment,
+                parent: parent,
+                depth: 1,
+            }),
+        }
+    }
+
+    fn len(&self) -> usize {
+        match self {
+            PathNode::Child(pi) => pi.depth,
+            PathNode::Root => 0,
+        }
+    }
+
+    fn iter(&'a self) -> PathNodeIterator<'a> {
+        PathNodeIterator { current_node: self }
+    }
+}
+
+struct PathNodeIterator<'a> {
+    current_node: &'a PathNode<'a>,
+}
+
+impl<'a> Iterator for PathNodeIterator<'a> {
+    type Item = &'a PathItem<'a>;
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.current_node {
+            PathNode::Child(pi) => {
+                self.current_node = pi.parent;
+                Some(pi)
+            }
+            PathNode::Root => return None,
+        }
     }
 }
 

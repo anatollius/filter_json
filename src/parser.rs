@@ -1,5 +1,7 @@
 use crate::error::FilterError;
-use crate::path::{FilterCriteria, InclusionStatus, Segment, exclusion_status, inclusion_status};
+use crate::path::{
+    FilterCriteria, InclusionStatus, PathNode, Segment, exclusion_status, inclusion_status,
+};
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
@@ -267,7 +269,7 @@ impl<'a> Parser<'a> {
     /// to include; caller must check whether `out` grew before emitting the key.
     pub(crate) fn filter_value_include(
         &mut self,
-        path: &[Segment],
+        path: PathNode,
         criteria: &FilterCriteria,
         out: &mut String,
     ) -> Result<(), FilterError> {
@@ -285,7 +287,7 @@ impl<'a> Parser<'a> {
 
     fn filter_object_include(
         &mut self,
-        path: &[Segment],
+        path: PathNode,
         criteria: &FilterCriteria,
         out: &mut String,
     ) -> Result<(), FilterError> {
@@ -303,8 +305,7 @@ impl<'a> Parser<'a> {
         loop {
             self.skip_whitespace();
             let key = self.parse_string()?;
-            let mut child_path = path.to_vec();
-            child_path.push(Segment::Key(&key));
+            let child_path = PathNode::create_child(Segment::Key(&key), &path);
 
             self.skip_whitespace();
             self.expect(b':')?;
@@ -321,7 +322,7 @@ impl<'a> Parser<'a> {
                 }
                 InclusionStatus::Recurse => {
                     let mut child_out = String::new();
-                    self.filter_value_include(&child_path, criteria, &mut child_out)?;
+                    self.filter_value_include(child_path, criteria, &mut child_out)?;
                     if !is_empty_container(&child_out) {
                         if !first {
                             out.push(',');
@@ -357,7 +358,7 @@ impl<'a> Parser<'a> {
 
     fn filter_array_include(
         &mut self,
-        path: &[Segment],
+        path: PathNode,
         criteria: &FilterCriteria,
         out: &mut String,
     ) -> Result<(), FilterError> {
@@ -375,8 +376,7 @@ impl<'a> Parser<'a> {
         let mut index: usize = 0;
         loop {
             self.skip_whitespace();
-            let mut child_path = path.to_vec();
-            child_path.push(Segment::Index(index));
+            let child_path = PathNode::create_child(Segment::Index(index), &path);
             index += 1;
 
             match inclusion_status(&child_path, criteria) {
@@ -389,7 +389,7 @@ impl<'a> Parser<'a> {
                 }
                 InclusionStatus::Recurse => {
                     let mut child_out = String::new();
-                    self.filter_value_include(&child_path, criteria, &mut child_out)?;
+                    self.filter_value_include(child_path, criteria, &mut child_out)?;
                     if !is_empty_container(&child_out) {
                         if !first {
                             out.push(',');
@@ -426,7 +426,7 @@ impl<'a> Parser<'a> {
 
     pub(crate) fn filter_value_exclude(
         &mut self,
-        path: &[Segment],
+        path: PathNode,
         criteria: &FilterCriteria,
         out: &mut String,
     ) -> Result<(), FilterError> {
@@ -440,7 +440,7 @@ impl<'a> Parser<'a> {
 
     fn filter_object_exclude(
         &mut self,
-        path: &[Segment],
+        path: PathNode,
         criteria: &FilterCriteria,
         out: &mut String,
     ) -> Result<(), FilterError> {
@@ -458,8 +458,7 @@ impl<'a> Parser<'a> {
         loop {
             self.skip_whitespace();
             let key = self.parse_string()?;
-            let mut child_path = path.to_vec();
-            child_path.push(Segment::Key(&key));
+            let child_path = PathNode::create_child(Segment::Key(&key), &path);
 
             self.skip_whitespace();
             self.expect(b':')?;
@@ -471,7 +470,7 @@ impl<'a> Parser<'a> {
                 }
                 InclusionStatus::Recurse => {
                     let mut child_out = String::new();
-                    self.filter_value_exclude(&child_path, criteria, &mut child_out)?;
+                    self.filter_value_exclude(child_path, criteria, &mut child_out)?;
                     if !is_empty_container(&child_out) {
                         if !first {
                             out.push(',');
@@ -512,7 +511,7 @@ impl<'a> Parser<'a> {
 
     fn filter_array_exclude(
         &mut self,
-        path: &[Segment],
+        path: PathNode,
         criteria: &FilterCriteria,
         out: &mut String,
     ) -> Result<(), FilterError> {
@@ -530,8 +529,7 @@ impl<'a> Parser<'a> {
         let mut index: usize = 0;
         loop {
             self.skip_whitespace();
-            let mut child_path = path.to_vec();
-            child_path.push(Segment::Index(index));
+            let child_path = PathNode::create_child(Segment::Index(index), &path);
             index += 1;
 
             match exclusion_status(&child_path, criteria) {
@@ -540,7 +538,7 @@ impl<'a> Parser<'a> {
                 }
                 InclusionStatus::Recurse => {
                     let mut child_out = String::new();
-                    self.filter_value_exclude(&child_path, criteria, &mut child_out)?;
+                    self.filter_value_exclude(child_path, criteria, &mut child_out)?;
                     if !is_empty_container(&child_out) {
                         if !first_out {
                             out.push(',');

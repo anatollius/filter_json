@@ -6,6 +6,7 @@ pub use error::FilterError;
 pub use path::FilterCriteria;
 
 use parser::Parser;
+use path::PathNode;
 
 #[cfg(feature = "extension-module")]
 use pyo3::prelude::*;
@@ -18,7 +19,7 @@ use pyo3::prelude::*;
 pub fn filter_json(input: &str, criteria: &FilterCriteria) -> Result<String, FilterError> {
     let mut parser = Parser::new(input);
     let mut out = String::new();
-    parser.filter_value_include(&[], criteria, &mut out)?;
+    parser.filter_value_include(PathNode::Root, criteria, &mut out)?;
     Ok(out)
 }
 
@@ -28,7 +29,7 @@ pub fn filter_json(input: &str, criteria: &FilterCriteria) -> Result<String, Fil
 pub fn filter_json_exclude(input: &str, criteria: &FilterCriteria) -> Result<String, FilterError> {
     let mut parser = Parser::new(input);
     let mut out = String::new();
-    parser.filter_value_exclude(&[], criteria, &mut out)?;
+    parser.filter_value_exclude(PathNode::Root, criteria, &mut out)?;
     Ok(out)
 }
 
