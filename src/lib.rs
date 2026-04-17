@@ -5,8 +5,10 @@ mod path;
 pub use error::FilterError;
 pub use path::FilterCriteria;
 
-use parser::Parser;
+use parser::{Parser, ReaderInput, StrInput};
 use path::PathNode;
+
+use std::io::Read;
 
 #[cfg(feature = "extension-module")]
 use pyo3::prelude::*;
@@ -17,20 +19,53 @@ use pyo3::prelude::*;
 ///
 /// Output is compact (no extra whitespace). Returns an error on malformed JSON.
 pub fn filter_json(input: &str, criteria: &FilterCriteria) -> Result<String, FilterError> {
-    let mut parser = Parser::new(input);
-    let mut out = String::new();
+    let mut parser = Parser::new(StrInput::new(input));
+    let mut out = Vec::new();
     parser.filter_value_include(PathNode::Root, criteria, &mut out)?;
-    Ok(out)
+    // SAFETY: StrInput output is always valid UTF-8 — it is built from a &str
+    // (which is valid UTF-8) with keys re-encoded char-by-char via push_json_key.
+    Ok(unsafe { String::from_utf8_unchecked(out) })
 }
 
 /// Filter `input` JSON, removing any keys that match the exclusion criteria.
 ///
 /// Output is compact (no extra whitespace). Returns an error on malformed JSON.
 pub fn filter_json_exclude(input: &str, criteria: &FilterCriteria) -> Result<String, FilterError> {
-    let mut parser = Parser::new(input);
-    let mut out = String::new();
+    let mut parser = Parser::new(StrInput::new(input));
+    let mut out = Vec::new();
     parser.filter_value_exclude(PathNode::Root, criteria, &mut out)?;
-    Ok(out)
+    // SAFETY: see filter_json above.
+    Ok(unsafe { String::from_utf8_unchecked(out) })
+}
+
+/// Filter JSON from a reader, retaining only the keys that match the inclusion criteria.
+///
+/// Output is compact (no extra whitespace). Returns an error on malformed JSON or
+/// invalid UTF-8 in the input.
+pub fn filter_json_read<R: Read>(
+    reader: R,
+    criteria: &FilterCriteria,
+) -> Result<String, FilterError> {
+    let mut parser = Parser::new(ReaderInput::new(reader));
+    let mut out = Vec::new();
+    parser.filter_value_include(PathNode::Root, criteria, &mut out)?;
+    String::from_utf8(out)
+        .map_err(|e| FilterError::InvalidJson(format!("invalid UTF-8 in input: {e}")))
+}
+
+/// Filter JSON from a reader, removing any keys that match the exclusion criteria.
+///
+/// Output is compact (no extra whitespace). Returns an error on malformed JSON or
+/// invalid UTF-8 in the input.
+pub fn filter_json_exclude_read<R: Read>(
+    reader: R,
+    criteria: &FilterCriteria,
+) -> Result<String, FilterError> {
+    let mut parser = Parser::new(ReaderInput::new(reader));
+    let mut out = Vec::new();
+    parser.filter_value_exclude(PathNode::Root, criteria, &mut out)?;
+    String::from_utf8(out)
+        .map_err(|e| FilterError::InvalidJson(format!("invalid UTF-8 in input: {e}")))
 }
 
 // ─── Python module (PyO3) ──────────────────────────────────────────────────
@@ -246,5 +281,37 @@ mod tests {
     fn error_on_unexpected_eof() {
         let c = FilterCriteria::new(&["a"]).unwrap();
         assert!(filter_json(r#"{"a": "#, &c).is_err());
+    }
+
+    // -- Read-based API --
+
+    #[test]
+    fn read_include_nested_key() {
+        let json = r#"{"customer": {"name": "Tom", "age": 24}}"#;
+        let c = FilterCriteria::new(&["customer.name"]).unwrap();
+        assert_eq!(
+            filter_json_read(json.as_bytes(), &c).unwrap(),
+            r#"{"customer":{"name":"Tom"}}"#
+        );
+    }
+
+    #[test]
+    fn read_exclude_top_level_key() {
+        let json = r#"{"name": "Tom", "age": 24}"#;
+        let c = FilterCriteria::new(&["age"]).unwrap();
+        assert_eq!(
+            filter_json_exclude_read(json.as_bytes(), &c).unwrap(),
+            r#"{"name":"Tom"}"#
+        );
+    }
+
+    #[test]
+    fn read_include_from_array() {
+        let json = r#"{"items": [{"name": "a", "price": 1}, {"name": "b", "price": 2}]}"#;
+        let c = FilterCriteria::new(&["items[*].name"]).unwrap();
+        assert_eq!(
+            filter_json_read(json.as_bytes(), &c).unwrap(),
+            r#"{"items":[{"name":"a"},{"name":"b"}]}"#
+        );
     }
 }
